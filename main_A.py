@@ -99,7 +99,7 @@ def drop_na(data,prop,thresh):
 # data = pd.get_dummies(data,drop_first=True)
 
 #todo 缺失值处理
-#先用众数填充
+#众数填充
 def fill_nan_with_mode(dataframe):
     col_index = dataframe.columns
     mode_list = []
@@ -109,7 +109,27 @@ def fill_nan_with_mode(dataframe):
     dict_results = dict(zip(col_index,mode_list))
     dataframe.fillna(value=dict_results,inplace=True)
     return dataframe
-
+def randomforests_fill_na():
+    estimator = RandomForestRegressor(n_estimators=100)
+    # 将有缺失的特征按照缺失值的比例有小到大排列
+    list = data.drop('LABEL',axis=1).columns
+    prop = []
+    for i in list:
+        prop_na = sum(data[i].isna())/40000
+        prop.append(prop_na)
+    order = np.argsort(prop)
+    # 从小到大遍历每一列,取出缺失值作为被预测值,将其他列填充0作为特征,用没有缺失值的列进行训练
+    data_sorted = data.drop('LABEL',axis=1).iloc[:,order]
+    data_train_sorted = data_sorted.dropna()
+    for i in data_sorted:
+        X_to_be_filled = data_sorted.drop(i,axis=1)[data_sorted[i].isna()].fillna(value=0)#对应索引取出特征列,并用0进行填充
+        if X_to_be_filled.shape[0] == 0:
+            continue
+        else:
+            index_for_fill = data_sorted[i][data_sorted[i].isna()].index
+            y_to_be_filled = estimator.fit(X=data_train_sorted.drop(i,axis=1),y=data_train_sorted[i]).predict(X_to_be_filled)#训练完缺失值
+            data_sorted[i] = data_sorted[i].combine_first(pd.Series(y_to_be_filled,index=index_for_fill))
+    return data_sorted
 
 #todo 训练测试集分离
 # X_train,X_test,y_train,y_test = train_test_split(data.iloc[:,1:],data.iloc[:,0])
