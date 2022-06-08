@@ -19,6 +19,7 @@ from sklearn.metrics import roc_curve,auc,roc_auc_score
 from xgboost import XGBClassifier as xgb
 from scipy.stats import boxcox
 from sklearn.impute import KNNImputer
+from sklearn.metrics import recall_score, confusion_matrix
 
 class my_tool():
     def __init__(self,estimator):
@@ -73,6 +74,36 @@ class my_tool():
         plt.legend(loc="best")
         plt.show()
         return plt
+
+    # 绘制混淆矩阵图
+    def plot_confusion_matrix(cm, classes,
+                              title='Confusion matrix',
+                              cmap=plt.cm.Blues):
+        """
+        :param cm: 由测试集标签和测试集预测结果组成的混淆矩阵
+        :param classes: 标签的格式 如0,1
+        :param title: 标题
+        :param cmap:
+        :return:
+        """
+        plt.imshow(cm, interpolation='nearest', cmap=cmap)
+        plt.title(title)
+        plt.colorbar()
+        tick_marks = np.arange(len(classes))
+        plt.xticks(tick_marks, classes, rotation=0)
+        plt.yticks(tick_marks, classes)
+
+        thresh = cm.max() / 2.
+        for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+            plt.text(j, i, cm[i, j],
+                     horizontalalignment="center",
+                     color="white" if cm[i, j] > thresh else "black")
+
+        plt.tight_layout()
+        plt.ylabel('True label')
+        plt.xlabel('Predicted label')
+        plt.show()
+
 
     # 验证曲线
     def plot_validation_curve(self, X, y, param_name, param_range, ylim=None, ):
