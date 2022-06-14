@@ -302,3 +302,33 @@ class my_tool():
 
         return params_best, score_best
 
+    def bayesian_optuna(n_trials,best_params):
+        def objective(trial):
+            n_estimators = trial.suggest_int('n_estimators', 80, 100)
+            max_depth = trial.suggest_int('max_depth', 10, 25)
+            max_featrues = trial.suggest_float('max_features', 0.1, 0.8)
+            min_impurity_decrease = trial.suggest_float('min_impurity_decrease', 0.0, 1.0)
+            reg = RFR(n_estimators=n_estimators,
+                      max_depth=max_depth,
+                      max_features=max_featrues,
+                      min_impurity_decrease=min_impurity_decrease,
+                      random_state=1117,
+                      verbose=False,
+                      n_jobs=-1
+                      )
+            validation_loss = cross_validate(
+                reg, X, y,
+                scoring='neg_root_mean_squared_error',
+                cv=5,
+                verbose=False,
+                n_jobs=-1,
+                error_score='raise'  # 出错时的告诉理由
+            )
+
+            return -np.mean(validation_loss['test_score'])
+
+        study = optuna.create_study()
+        study.optimize(objective, n_trials=n_trials)
+        best_params = study.best_params
+        found_x = best_params[best_params]
+        print("Found n_estimators: {}".format(found_x))
