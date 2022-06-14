@@ -254,4 +254,51 @@ class my_tool():
         plt.plot(range(X.shape[1]),score)
         plt.show()
 
+    #贝叶斯优化
+    def bayesopt_objective(n_estimators, max_depth, max_featrues, min_impurity_decrease):
+        # 定义评估器
+        # 需要调整的超参数等于目标函数的输入,不需要调整的参数等于固定值
+        # 默认参数输入一定是浮点数,因此在传入评估器时需要用int转化为整数
+        reg = RFR(n_estimators=int(n_estimators),
+                  max_depth=int(max_depth),
+                  max_features=int(max_featrues),
+                  min_impurity_decrease=int(min_impurity_decrease),
+                  random_state=1117,
+                  verbose=False,
+                  n_jobs=-1
+                  )
+        # 定义损失的输出,五折交叉验证下的结果,输出-RMSE
+        # 注意,不能让数据X,y成为目标函数的输入
+        cv = KFold(n_splits=5, shuffle=True, random_state=1117)
+        validation_loss = cross_validate(
+            reg, X, y,
+            scoring='neg_root_mean_squared_error',
+            cv=cv,
+            verbose=False,
+            n_jobs=-1,
+            error_score='raise'  # 出错时的告诉理由
+        )
+        return np.mean(validation_loss['test_score'])
+
+    param_grid_simple = {
+        'n_estimators': (80, 100),
+        'max_depth': (10, 25),
+        'max_featrues': (10, 20),
+        'min_impurity_decrease': (0, 1)
+    }
+
+    def param_bayes_opt(init_points, n_iter):
+        opt = BayesianOptimization(bayesopt_objective,
+                                   param_grid_simple,
+                                   random_state=1117
+                                   )
+        opt.maximize(init_points=init_points,  # 抽取多少个初始值进行观测
+                     n_iter=n_iter  # 一共观测多少次
+                     )
+        params_best = opt.max['params']
+        score_best = opt.max['target']
+        print('\n', '\n', 'best params:', params_best)
+        print('\n', '\n', 'best cvscore:', score_best)
+
+        return params_best, score_best
 
